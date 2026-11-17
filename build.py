@@ -10,6 +10,10 @@ from pathlib import Path
 RAIZ = Path(__file__).parent
 SAIDA = RAIZ / "site"
 
+# ---------------------------------------------------------------
+# DADOS (é aqui que você edita o conteúdo do site)
+# ---------------------------------------------------------------
+
 # Menu "Conteúdos": (texto, arquivo). None = link "#"
 MENU = [
     ("Introdução", "painel.html"),
@@ -18,32 +22,66 @@ MENU = [
     ("Strings", None),
     ("Iteração", None),
     ("Função", None),
+    ("Condicionais", None),
+    ("Listas e Tuplas", None),
+    ("Dicionários", None),
+    ("Recursividade", None),
+]
+
+# Áreas da caixa "Área específica" (na ordem em que aparecem)
+AREAS = [
+    "Português", "Filosofia",
+    "História", "Artes",
+    "Matemática", "Música",
+    "Biologia", "Química",
+    "Geografia", "Física",
 ]
 
 EXERCICIOS = ["Exercício 1", "Exercício 2", "Exercício 3"]
 
-# Cada página: arquivo -> (título, parágrafos em HTML)
+# Cada página: arquivo -> dados
+#   exercicios: mostra a coluna de exercícios
+#   msg_areas:  mostra "Exemplos adaptados para: ..." (vem da escolha feita no painel)
 PAGINAS = {
-    "variaveis.html": (
-        "Variáveis",
-        [
+    "painel.html": {
+        "titulo": "Introdução",
+        "exercicios": False,
+        "msg_areas": False,
+        "paragrafos": [
+            "Bem-vindo! Aqui você aprende lógica de programação com exemplos da sua área de ensino.",
+            "Programar é dar instruções claras a um computador, passo a passo, "
+            "como num plano de aula bem detalhado.",
+            "Escolha um conteúdo no menu para começar e use os exercícios ao lado para praticar.",
+        ],
+    },
+    "variaveis.html": {
+        "titulo": "Variáveis",
+        "exercicios": True,
+        "msg_areas": True,
+        "paragrafos": [
             "Uma variável guarda um valor com um nome, por exemplo <code>nota = 8.5</code>.",
             "Depois, você usa o nome em vez de repetir o valor. "
             "Se a nota mudar, basta alterar em um só lugar.",
             'Exemplo: <code>aluno = "Ana"</code> e <code>faltas = 3</code>.',
         ],
-    ),
-    "algoritmos.html": (
-        "Algoritmos",
-        [
+    },
+    "algoritmos.html": {
+        "titulo": "Algoritmos",
+        "exercicios": True,
+        "msg_areas": True,
+        "paragrafos": [
             "Um algoritmo é uma sequência de passos para resolver um problema.",
             "Exemplo: para calcular a média, some as notas e divida pela quantidade.",
         ],
-    ),
+    },
 }
 
-# No site estático não há servidor, então o aviso das áreas continua no navegador.
-SCRIPT_AREAS = """<script>
+# ---------------------------------------------------------------
+# TRECHOS DE JAVASCRIPT (o navegador ainda precisa deles)
+# ---------------------------------------------------------------
+
+# Mostra a mensagem com as áreas escolhidas
+SCRIPT_MSG_AREAS = """<script>
     try {
       var areas = JSON.parse(sessionStorage.getItem("areas") || "[]");
       if (areas.length) {
@@ -54,22 +92,95 @@ SCRIPT_AREAS = """<script>
     } catch (e) {}
   </script>"""
 
+# Abre o diálogo, guarda as áreas e vai para Variáveis
+SCRIPT_DIALOGO = """<script>
+    var dialogo = document.getElementById("dialogo-area");
+
+    document.getElementById("abrir-areas").addEventListener("click", function () {
+      dialogo.showModal();
+    });
+
+    dialogo.addEventListener("close", function () {
+      if (dialogo.returnValue !== "continuar") return;
+      var areas = Array.from(dialogo.querySelectorAll("input:checked")).map(function (i) { return i.value; });
+      try { sessionStorage.setItem("areas", JSON.stringify(areas)); } catch (e) {}
+      window.location.href = "variaveis.html";
+    });
+  </script>"""
+
+# ---------------------------------------------------------------
+# FUNÇÕES QUE MONTAM O HTML
+# ---------------------------------------------------------------
+
 
 def menu_html(arquivo_atual):
     itens = []
     for nome, destino in MENU:
+        nome = escape(nome)
+        if destino == "variaveis.html" and arquivo_atual != "variaveis.html":
+            # "Variáveis" abre a caixa de áreas em vez de ir direto
+            itens.append(
+                f'          <li><button class="menu__item" type="button" id="abrir-areas">{nome}</button></li>'
+            )
+            continue
         href = destino or "#"
         atual = ' aria-current="page"' if destino == arquivo_atual else ""
-        itens.append(f'          <li><a class="menu__item" href="{href}"{atual}>{escape(nome)}</a></li>')
+        itens.append(f'          <li><a class="menu__item" href="{href}"{atual}>{nome}</a></li>')
     return "\n".join(itens)
 
 
 def exercicios_html():
-    return "\n".join(f'          <li><a href="#">{escape(e)}</a></li>' for e in EXERCICIOS)
+    itens = "\n".join(f'          <li><a href="#">{escape(e)}</a></li>' for e in EXERCICIOS)
+    return f"""
+      <aside class="exercicios" aria-label="Exercícios">
+        <h2 class="exercicios__titulo">Exercícios</h2>
+        <ul class="exercicios__lista">
+{itens}
+        </ul>
+      </aside>
+"""
 
 
-def pagina_html(arquivo, titulo, paragrafos):
-    texto = "\n".join(f"          <p>{p}</p>" for p in paragrafos)
+def dialogo_html():
+    opcoes = "\n".join(
+        f'        <label class="opcao"><input type="checkbox" name="area" value="{escape(a)}"> {escape(a)}</label>'
+        for a in AREAS
+    )
+    return f"""
+  <!-- Seleção de área específica -->
+  <dialog class="dialogo" id="dialogo-area">
+    <form method="dialog">
+      <h2 class="dialogo__titulo">Área específica</h2>
+      <p class="dialogo__ajuda">Escolha sua área para ver exemplos adaptados.</p>
+      <fieldset>
+{opcoes}
+      </fieldset>
+      <div class="dialogo__acoes">
+        <button class="botao botao--secundario" value="cancelar">Cancelar</button>
+        <button class="botao" value="continuar">Continuar</button>
+      </div>
+    </form>
+  </dialog>
+"""
+
+
+def pagina_html(arquivo, dados):
+    titulo = dados["titulo"]
+    paragrafos = "\n".join(f"          <p>{p}</p>" for p in dados["paragrafos"])
+    msg = '          <p id="areas-escolhidas" hidden></p>\n' if dados["msg_areas"] else ""
+    aside = exercicios_html() if dados["exercicios"] else ""
+
+    # O diálogo só existe nas páginas em que "Variáveis" é um botão
+    tem_dialogo = arquivo != "variaveis.html"
+    dialogo = dialogo_html() if tem_dialogo else ""
+
+    scripts = []
+    if tem_dialogo:
+        scripts.append(SCRIPT_DIALOGO)
+    if dados["msg_areas"]:
+        scripts.append(SCRIPT_MSG_AREAS)
+    scripts_html = "\n\n  ".join(scripts)
+
     return f"""<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -101,25 +212,93 @@ def pagina_html(arquivo, titulo, paragrafos):
       <main class="conteudo">
         <h2 class="conteudo__titulo">{escape(titulo)}</h2>
         <div class="conteudo__texto">
-          <p id="areas-escolhidas" hidden></p>
-{texto}
+{msg}{paragrafos}
         </div>
       </main>
-
-      <aside class="exercicios" aria-label="Exercícios">
-        <h2 class="exercicios__titulo">Exercícios</h2>
-        <ul class="exercicios__lista">
-{exercicios_html()}
-        </ul>
-      </aside>
-
+{aside}
     </div>
   </div>
-
-  {SCRIPT_AREAS}
+{dialogo}
+  {scripts_html}
 </body>
 </html>
 """
+
+
+# Pontos (x, y) do desenho de fundo da tela de login
+PONTOS_FUNDO = [
+    (400, 90), (440, 90), (480, 90),
+    (400, 150), (440, 150),
+    (400, 210), (440, 210), (480, 210), (520, 210),
+]
+
+# Modelo da tela de login. @@PONTOS@@ é trocado pelos círculos acima.
+MODELO_INDEX = """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Professores em Ação</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+  <main class="login">
+
+    <section class="boas-vindas">
+      <h1 class="boas-vindas__titulo">Welcome</h1>
+      <p class="boas-vindas__nome">Professores em Ação</p>
+    </section>
+
+    <!-- Espaço do "desenho de fundo": troque este SVG por sua arte -->
+    <svg class="fundo" viewBox="0 0 640 300" fill="none" stroke="currentColor"
+         stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M90 60c-28 0-34 14-34 36v20c0 14-8 22-24 24 16 2 24 10 24 24v20c0 22 6 36 34 36"/>
+      <path d="M250 60c28 0 34 14 34 36v20c0 14 8 22 24 24-16 2-24 10-24 24v20c0 22-6 36-34 36"/>
+      <path d="M130 120l-18 30 18 30M210 120l18 30-18 30"/>
+      <path d="M185 112l-20 76"/>
+@@PONTOS@@
+    </svg>
+
+    <form class="cartao" id="form-login">
+      <h2 class="cartao__titulo">Login</h2>
+
+      <label class="campo">
+        <span class="campo__rotulo">Email</span>
+        <input class="campo__entrada" type="email" name="email" autocomplete="email" required>
+      </label>
+
+      <label class="campo">
+        <span class="campo__rotulo">Password</span>
+        <input class="campo__entrada" type="password" name="password" autocomplete="current-password" required>
+      </label>
+
+      <button class="botao" type="submit">Login</button>
+
+      <p class="cartao__alternativa">
+        ou
+        <a href="#">Sign up</a>
+      </p>
+    </form>
+
+  </main>
+  <script>
+    // Simulação: vai direto ao painel. A autenticação real exige um serviço externo.
+    document.getElementById("form-login").addEventListener("submit", function (e) {
+      e.preventDefault();
+      window.location.href = "painel.html";
+    });
+  </script>
+</body>
+</html>
+"""
+
+
+def index_html():
+    pontos = "\n".join(
+        f'      <circle cx="{x}" cy="{y}" r="9" fill="currentColor" stroke="none"/>'
+        for x, y in PONTOS_FUNDO
+    )
+    return MODELO_INDEX.replace("@@PONTOS@@", pontos)
 
 
 def main():
@@ -128,11 +307,14 @@ def main():
     SAIDA.mkdir()
 
     # Páginas geradas por Python
-    for arquivo, (titulo, paragrafos) in PAGINAS.items():
-        (SAIDA / arquivo).write_text(pagina_html(arquivo, titulo, paragrafos), encoding="utf-8")
+    for arquivo, dados in PAGINAS.items():
+        (SAIDA / arquivo).write_text(pagina_html(arquivo, dados), encoding="utf-8")
 
-    # Arquivos que continuam como estão (login, painel, estilos)
-    for nome in ["index.html", "painel.html", "style.css", "login.css"]:
+    # Tela de login
+    (SAIDA / "index.html").write_text(index_html(), encoding="utf-8")
+
+    # Arquivos que continuam como estão (estilos)
+    for nome in ["style.css", "login.css"]:
         origem = RAIZ / nome
         if origem.exists():
             shutil.copy(origem, SAIDA / nome)
