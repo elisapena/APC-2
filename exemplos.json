@@ -1,0 +1,14 @@
+{
+  "variaveis.html": {
+    "Português": "`titulo = \"Dom Casmurro\"` guarda o título de um livro e `capitulos = 148` guarda o número de capítulos. Se a edição mudar, você altera o valor em um só lugar.",
+    "Filosofia": "`pensador = \"Sócrates\"` e `epoca = \"século V a.C.\"`: cada variável guarda uma informação sobre o pensador que você está estudando.",
+    "História": "`evento = \"Independência do Brasil\"` e `ano = 1822`. Com as variáveis, você monta uma linha do tempo sem repetir os dados.",
+    "Artes": "`obra = \"Abaporu\"`, `artista = \"Tarsila do Amaral\"` e `ano = 1928` descrevem uma obra em três variáveis.",
+    "Matemática": "`raio = 5` e `pi = 3.14`. Depois, `pi * raio ** 2` calcula a área do círculo, e se o raio mudar basta alterar a primeira linha.",
+    "Música": "`nota = \"Dó\"` e `bpm = 120` guardam uma nota e o andamento (batidas por minuto) de uma peça.",
+    "Biologia": "`especie = \"Onça-pintada\"` e `bioma = \"Pantanal\"` registram a espécie observada e onde ela vive.",
+    "Química": "`elemento = \"Oxigênio\"` e `numero_atomico = 8` guardam o nome do elemento e seu número atômico.",
+    "Geografia": "`cidade = \"Brasília\"` e `regiao = \"Centro-Oeste\"` guardam uma cidade e a região do Brasil em que ela fica.",
+    "Física": "`velocidade = 20` e `tempo = 5`. Depois, `velocidade * tempo` dá a distância percorrida, e você pode trocar os valores sem refazer a conta."
+  }
+}
