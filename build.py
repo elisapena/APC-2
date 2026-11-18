@@ -14,18 +14,19 @@ SAIDA = RAIZ / "site"
 # DADOS (é aqui que você edita o conteúdo do site)
 # ---------------------------------------------------------------
 
-# Menu "Conteúdos": (texto, arquivo). None = link "#"
+# Menu "Conteúdos": (texto, arquivo)
+# Clicar em qualquer conteúdo (menos Introdução) abre a caixa "Área específica"
 MENU = [
     ("Introdução", "painel.html"),
     ("Variáveis", "variaveis.html"),
     ("Algoritmos", "algoritmos.html"),
-    ("Strings", None),
-    ("Iteração", None),
-    ("Função", None),
-    ("Condicionais", None),
-    ("Listas e Tuplas", None),
-    ("Dicionários", None),
-    ("Recursividade", None),
+    ("Strings", "strings.html"),
+    ("Iteração", "iteracao.html"),
+    ("Função", "funcao.html"),
+    ("Condicionais", "condicionais.html"),
+    ("Listas e Tuplas", "listas-tuplas.html"),
+    ("Dicionários", "dicionarios.html"),
+    ("Recursividade", "recursividade.html"),
 ]
 
 # Áreas da caixa "Área específica" (na ordem em que aparecem)
@@ -76,6 +77,17 @@ PAGINAS = {
     },
 }
 
+# Todo conteúdo do menu que ainda não tem texto ganha uma página provisória.
+# Para escrever o texto de verdade, copie o modelo de "algoritmos.html" acima.
+for _nome, _arquivo in MENU:
+    if _arquivo not in PAGINAS:
+        PAGINAS[_arquivo] = {
+            "titulo": _nome,
+            "exercicios": True,
+            "msg_areas": True,
+            "paragrafos": [f"O conteúdo de {escape(_nome)} será publicado em breve."],
+        }
+
 # ---------------------------------------------------------------
 # TRECHOS DE JAVASCRIPT (o navegador ainda precisa deles)
 # ---------------------------------------------------------------
@@ -92,19 +104,29 @@ SCRIPT_MSG_AREAS = """<script>
     } catch (e) {}
   </script>"""
 
-# Abre o diálogo, guarda as áreas e vai para Variáveis
+# Abre o diálogo ao clicar em um conteúdo, guarda as áreas e vai para a página escolhida
 SCRIPT_DIALOGO = """<script>
     var dialogo = document.getElementById("dialogo-area");
+    var destino = "";
 
-    document.getElementById("abrir-areas").addEventListener("click", function () {
-      dialogo.showModal();
+    document.querySelectorAll("[data-destino]").forEach(function (botao) {
+      botao.addEventListener("click", function () {
+        destino = botao.dataset.destino;
+        // marca de novo as áreas escolhidas antes
+        var salvas = [];
+        try { salvas = JSON.parse(sessionStorage.getItem("areas") || "[]"); } catch (e) {}
+        dialogo.querySelectorAll("input").forEach(function (i) {
+          i.checked = salvas.indexOf(i.value) !== -1;
+        });
+        dialogo.showModal();
+      });
     });
 
     dialogo.addEventListener("close", function () {
       if (dialogo.returnValue !== "continuar") return;
       var areas = Array.from(dialogo.querySelectorAll("input:checked")).map(function (i) { return i.value; });
       try { sessionStorage.setItem("areas", JSON.stringify(areas)); } catch (e) {}
-      window.location.href = "variaveis.html";
+      window.location.href = destino;
     });
   </script>"""
 
@@ -117,15 +139,15 @@ def menu_html(arquivo_atual):
     itens = []
     for nome, destino in MENU:
         nome = escape(nome)
-        if destino == "variaveis.html" and arquivo_atual != "variaveis.html":
-            # "Variáveis" abre a caixa de áreas em vez de ir direto
+        if destino == "painel.html" or destino == arquivo_atual:
+            # Introdução e a página atual são links comuns
+            atual = ' aria-current="page"' if destino == arquivo_atual else ""
+            itens.append(f'          <li><a class="menu__item" href="{destino}"{atual}>{nome}</a></li>')
+        else:
+            # Os outros conteúdos abrem a caixa "Área específica" antes
             itens.append(
-                f'          <li><button class="menu__item" type="button" id="abrir-areas">{nome}</button></li>'
+                f'          <li><button class="menu__item" type="button" data-destino="{destino}">{nome}</button></li>'
             )
-            continue
-        href = destino or "#"
-        atual = ' aria-current="page"' if destino == arquivo_atual else ""
-        itens.append(f'          <li><a class="menu__item" href="{href}"{atual}>{nome}</a></li>')
     return "\n".join(itens)
 
 
@@ -170,13 +192,10 @@ def pagina_html(arquivo, dados):
     msg = '          <p id="areas-escolhidas" hidden></p>\n' if dados["msg_areas"] else ""
     aside = exercicios_html() if dados["exercicios"] else ""
 
-    # O diálogo só existe nas páginas em que "Variáveis" é um botão
-    tem_dialogo = arquivo != "variaveis.html"
-    dialogo = dialogo_html() if tem_dialogo else ""
+    # Todas as páginas têm a caixa "Área específica" (os conteúdos do menu a abrem)
+    dialogo = dialogo_html()
 
-    scripts = []
-    if tem_dialogo:
-        scripts.append(SCRIPT_DIALOGO)
+    scripts = [SCRIPT_DIALOGO]
     if dados["msg_areas"]:
         scripts.append(SCRIPT_MSG_AREAS)
     scripts_html = "\n\n  ".join(scripts)
